@@ -3,6 +3,7 @@ import type { Profile } from '@/types/profile';
 import { normalizeProgress } from '@/utils/progressRules';
 
 const INDEX_KEY = 'nonnon.profileIds';
+const ACTIVE_PROFILE_KEY = 'nonnon.activeProfileId';
 const profileKey = (id: string) => `nonnon.profile.${id}`;
 
 function isProfile(value: unknown): value is Profile {
@@ -18,21 +19,39 @@ function isProfile(value: unknown): value is Profile {
   );
 }
 
+export async function loadActiveProfileId(): Promise<string | null> {
+  return AsyncStorage.getItem(ACTIVE_PROFILE_KEY);
+}
+
+export async function saveActiveProfileId(id: string): Promise<void> {
+  await AsyncStorage.setItem(ACTIVE_PROFILE_KEY, id);
+}
+
+export async function clearActiveProfileId(): Promise<void> {
+  await AsyncStorage.removeItem(ACTIVE_PROFILE_KEY);
+}
+
 export async function loadProfiles(): Promise<Profile[]> {
   const indexRaw = await AsyncStorage.getItem(INDEX_KEY);
   if (!indexRaw) return [];
 
   const ids = JSON.parse(indexRaw) as unknown;
-  if (!Array.isArray(ids)) return [];
-  const validIds = ids.filter((id): id is string => typeof id === 'string');
+  if (!Array.isArray(ids)) throw new Error('Invalid profile index');
+  const validIds = [...new Set(ids.filter((id): id is string => typeof id === 'string' && id.length > 0))];
   if (validIds.length === 0) return [];
 
   const entries = await AsyncStorage.multiGet(validIds.map(profileKey));
   const profiles: Profile[] = [];
-  for (const [, raw] of entries) {
-    if (!raw) continue;
-    const parsed: unknown = JSON.parse(raw);
-    if (isProfile(parsed)) profiles.push({ ...parsed, progress: normalizeProgress(parsed.progress) });
+  for (const [key, raw] of entries) {
+    if (!raw || !key) continue;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      const expectedId = validIds.find((id) => profileKey(id) === key);
+      if (!expectedId || !isProfile(parsed) || parsed.id !== expectedId) continue;
+      profiles.push({ ...parsed, progress: normalizeProgress(parsed.progress) });
+    } catch {
+      // Ignore a single damaged profile instead of preventing other profiles from loading.
+    }
   }
   return profiles;
 }
