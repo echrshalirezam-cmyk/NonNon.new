@@ -101,7 +101,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <ProgressBar progress={steps.length === 0 ? 1 : (stepIndex + (outcome ? 1 : 0)) / steps.length} height={8} />
+      <ProgressBar progress={steps.length === 0 ? 1 : (stepIndex + 1) / steps.length} height={8} />
       {renderStep()}
       {outcome ? (
         <FeedbackBar
