@@ -115,7 +115,7 @@ export function claimDailyRewardRule(progress: ProfileProgress, today: string): 
   if (progress.lastRewardDate === today) {
     return { ok: false, error: 'جایزه امروز قبلاً دریافت شده است.' };
   }
-  const active = markActivity(progress, today);
+  const active = markActivity(refreshDaily(progress, today), today);
   const amount = dailyRewardAmount(active.dailyStreak);
   const next = { ...active, coins: active.coins + amount, lastRewardDate: today };
   return { ok: true, progress: { ...next, achievements: unlockedAchievementIds(next) } };
@@ -139,7 +139,7 @@ export function reviewRule(
 ): RuleResult {
   const missed = new Set(missedWordIds);
   const resolved = new Set(coveredWordIds.filter((wordId) => !missed.has(wordId)));
-  const active = markActivity(progress, today);
+  const active = markActivity(refreshDaily(progress, today), today);
   const next = {
     ...active,
     reviewCount: active.reviewCount + 1,
