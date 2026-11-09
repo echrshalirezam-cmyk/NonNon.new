@@ -17,7 +17,7 @@ import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { StatsCard } from '@/components/profiles/StatsCard';
 
 export default function SettingsScreen() {
-  const { activeProfile, updateAudioSettings } = useProfiles();
+  const { activeProfile, updateAudioSettings, clearActiveProfile } = useProfiles();
   const audio = useAudioSettings();
   const stats = useMemo(
     () => (activeProfile ? computeStats(activeProfile.progress, dateKey(new Date())) : null),
@@ -25,6 +25,11 @@ export default function SettingsScreen() {
   );
 
   if (!activeProfile || !stats) return null;
+
+  const handleLogout = async () => {
+    const result = await clearActiveProfile();
+    if (result.ok) router.replace('/profiles');
+  };
 
   return (
     <GradientBackground>
@@ -67,7 +72,7 @@ export default function SettingsScreen() {
         <PrimaryButton
           label="خروج از حساب کاربری"
           icon={<LogOut size={20} color={colors.neutral[0]} strokeWidth={2.2} />}
-          onPress={() => router.replace('/profiles')}
+          onPress={handleLogout}
         />
       </ScrollView>
     </GradientBackground>
