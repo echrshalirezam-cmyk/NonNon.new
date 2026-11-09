@@ -61,20 +61,30 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    const startupTimeout = setTimeout(() => {
+      if (!cancelled) {
+        setLoadFailed(true);
+        setReady(true);
+      }
+    }, 8000);
+
     Promise.all([loadProfiles(), loadActiveProfileId()])
       .then(([loaded, savedActiveId]) => {
         if (cancelled) return;
         setProfiles(loaded);
         setActiveId(savedActiveId && loaded.some((profile) => profile.id === savedActiveId) ? savedActiveId : null);
+        setLoadFailed(false);
       })
       .catch(() => {
         if (!cancelled) setLoadFailed(true);
       })
       .finally(() => {
+        clearTimeout(startupTimeout);
         if (!cancelled) setReady(true);
       });
     return () => {
       cancelled = true;
+      clearTimeout(startupTimeout);
     };
   }, []);
 
