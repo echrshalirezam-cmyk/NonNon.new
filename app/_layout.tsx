@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
@@ -13,6 +15,15 @@ import { ProfileProvider } from '@/context/ProfileContext';
 
 export default function RootLayout() {
   useFrameworkReady();
+
+  // Explicitly dismiss Android's native launch screen as soon as the root mounts.
+  // Font loading must never keep the native eagle splash visible.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, []);
 
   useFonts({
     'Nunito-Regular': Nunito_400Regular,
