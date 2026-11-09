@@ -32,6 +32,9 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Align dependencies with installed Expo SDK
+        run: npx expo install --fix
+
       - name: Check Expo dependency compatibility
         run: npx expo-doctor
 
