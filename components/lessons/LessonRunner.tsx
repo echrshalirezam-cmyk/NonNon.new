@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Speech from 'expo-speech';
-import { spacing } from '@/constants/theme';
+import { semanticColors, spacing, typography } from '@/constants/theme';
 import type { Exercise, ExerciseOutcome, GrammarNote, Lesson, LessonAttempt, Word } from '@/types/lesson';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { FeedbackBar } from '@/components/lessons/FeedbackBar';
@@ -39,18 +39,16 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   const [tally, setTally] = useState<LessonAttempt>(emptyTally);
   const startedAt = useRef(Date.now());
   const completedRef = useRef(false);
+  const answeredRef = useRef(false);
 
-  useEffect(() => {
-    return () => {
-      Speech.stop();
-    };
-  }, []);
+  useEffect(() => () => { Speech.stop(); }, []);
 
   const step = steps[stepIndex];
   const isLast = stepIndex === steps.length - 1;
 
   function handleAnswered(result: ExerciseOutcome) {
-    if (outcome || busy || completedRef.current) return;
+    if (answeredRef.current || busy || completedRef.current) return;
+    answeredRef.current = true;
     setOutcome(result);
     setTally((current) => ({
       ...current,
@@ -63,6 +61,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   function handleContinue() {
     if (busy || completedRef.current) return;
     if (!isLast) {
+      answeredRef.current = false;
       setStepIndex((current) => current + 1);
       setOutcome(null);
       return;
@@ -79,50 +78,34 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
       case 'matching':
         return <MatchingExercise key={stepIndex} pairs={exercise.pairs} onAnswered={handleAnswered} />;
       case 'ordering':
-        return (
-          <OrderingExercise
-            key={stepIndex}
-            sentence={exercise.sentence}
-            hint={exercise.hint}
-            onAnswered={handleAnswered}
-          />
-        );
+        return <OrderingExercise key={stepIndex} sentence={exercise.sentence} hint={exercise.hint} onAnswered={handleAnswered} />;
     }
   }
 
   function renderStep() {
     if (!step) return null;
-    if (step.kind === 'vocabulary') {
-      return <VocabularyStep words={step.words} onNext={handleContinue} />;
-    }
-    if (step.kind === 'grammar') {
-      return <GrammarStep note={step.note} onNext={handleContinue} />;
-    }
+    if (step.kind === 'vocabulary') return <VocabularyStep words={step.words} onNext={handleContinue} />;
+    if (step.kind === 'grammar') return <GrammarStep note={step.note} onNext={handleContinue} />;
     return renderExercise(step.exercise);
   }
 
-  const progress = steps.length === 0 ? 1 : (stepIndex + (outcome ? 1 : 0)) / steps.length;
+  if (steps.length === 0) {
+    return <View style={styles.empty}><Text style={styles.emptyText}>محتوای این درس هنوز آماده نیست.</Text></View>;
+  }
+
+  const progress = (stepIndex + (outcome ? 1 : 0)) / steps.length;
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <ProgressBar progress={progress} height={8} />
       {renderStep()}
-      {outcome ? (
-        <FeedbackBar
-          outcome={outcome}
-          continueLabel={isLast ? 'پایان درس' : 'ادامه'}
-          busy={busy}
-          onContinue={handleContinue}
-        />
-      ) : null}
+      {outcome ? <FeedbackBar outcome={outcome} continueLabel={isLast ? 'پایان درس' : 'ادامه'} busy={busy} onContinue={handleContinue} /> : null}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.sm,
-  },
+  content: { paddingHorizontal: spacing.sm, paddingBottom: spacing.lg, gap: spacing.sm },
+  empty: { padding: spacing.lg, alignItems: 'center' },
+  emptyText: { ...typography.body, color: semanticColors.textSecondary, textAlign: 'center' },
 });
