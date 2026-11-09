@@ -1,24 +1,30 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, fonts, glow, semanticColors, spacing, typography } from '@/constants/theme';
 import { GradientBackground } from '@/components/ui/GradientBackground';
+import { useProfiles } from '@/context/ProfileContext';
 const officialIcon = require('../assets/images/splash-icon.png');
 
 const LOAD_DURATION_MS = 2400;
 
 export default function SplashScreen() {
   const progress = useSharedValue(0);
+  const [animationFinished, setAnimationFinished] = useState(false);
+  const { ready, activeProfile } = useProfiles();
 
   useEffect(() => {
     progress.value = withTiming(1, { duration: LOAD_DURATION_MS }, (finished) => {
-      if (finished) {
-        runOnJS(goToProfiles)();
-      }
+      if (finished) runOnJS(setAnimationFinished)(true);
     });
   }, [progress]);
+
+  useEffect(() => {
+    if (!animationFinished || !ready) return;
+    router.replace(activeProfile ? '/(tabs)/home' : '/profiles');
+  }, [animationFinished, ready, activeProfile]);
 
   const fillStyle = useAnimatedStyle(() => ({
     width: `${progress.value * 100}%`,
@@ -58,10 +64,6 @@ export default function SplashScreen() {
       </View>
     </GradientBackground>
   );
-}
-
-function goToProfiles() {
-  router.replace('/profiles');
 }
 
 const styles = StyleSheet.create({
