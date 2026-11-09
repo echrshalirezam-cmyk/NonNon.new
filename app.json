@@ -23,7 +23,6 @@
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png",
         "backgroundColor": "#060D24"
       },
-      "edgeToEdgeEnabled": false,
       "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
