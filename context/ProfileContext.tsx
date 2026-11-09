@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { loadProfiles, removeProfile, saveProfile } from '@/storage/profileStorage';
+import { clearActiveProfileId, loadActiveProfileId, loadProfiles, removeProfile, saveActiveProfileId, saveProfile } from '@/storage/profileStorage';
 import { defaultAvatarId } from '@/constants/avatars';
 import { validateProfileName } from '@/utils/profileValidation';
 import type { LessonAttempt } from '@/types/lesson';
@@ -60,9 +60,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadProfiles()
-      .then((loaded) => {
-        if (!cancelled) setProfiles(loaded);
+    Promise.all([loadProfiles(), loadActiveProfileId()])
+      .then(([loaded, savedActiveId]) => {
+        if (cancelled) return;
+        setProfiles(loaded);
+        setActiveId(savedActiveId && loaded.some((profile) => profile.id === savedActiveId) ? savedActiveId : null);
       })
       .catch(() => {
         if (!cancelled) setLoadFailed(true);
@@ -151,6 +153,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
       try {
         await removeProfile(id, profiles.map((profile) => profile.id));
+        if (activeId === id) await clearActiveProfileId();
       } catch {
         return { ok: false, error: STORAGE_ERROR };
       }
@@ -158,12 +161,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setActiveId((current) => (current === id ? null : current));
       return { ok: true };
     },
-    [profiles],
+    [profiles, activeId],
   );
 
   const selectProfile = useCallback((id: string) => {
+    if (!profiles.some((profile) => profile.id === id)) return;
     setActiveId(id);
-  }, []);
+    void saveActiveProfileId(id).catch(() => {
+      // The in-memory selection remains usable; the next launch will ask for selection again.
+    });
+  }, [profiles]);
 
   const recordLessonResult = useCallback(
     async (lessonId: string, attempt: LessonAttempt): Promise<LessonResultOutcome> => {
