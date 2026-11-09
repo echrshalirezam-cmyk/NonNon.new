@@ -49,6 +49,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   const isLast = stepIndex === steps.length - 1;
 
   function handleAnswered(result: ExerciseOutcome) {
+    if (outcome || busy) return;
     setOutcome(result);
     setTally((current) => ({
       ...current,
@@ -59,8 +60,9 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   }
 
   function handleContinue() {
+    if (busy || !step || steps.length === 0) return;
     if (!isLast) {
-      setStepIndex(stepIndex + 1);
+      setStepIndex((current) => current + 1);
       setOutcome(null);
       return;
     }
@@ -87,6 +89,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   }
 
   function renderStep() {
+    if (!step) return null;
     if (step.kind === 'vocabulary') {
       return <VocabularyStep words={step.words} onNext={handleContinue} />;
     }
@@ -98,7 +101,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
 
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <ProgressBar progress={stepIndex / steps.length} height={8} />
+      <ProgressBar progress={steps.length === 0 ? 1 : (stepIndex + (outcome ? 1 : 0)) / steps.length} height={8} />
       {renderStep()}
       {outcome ? (
         <FeedbackBar
