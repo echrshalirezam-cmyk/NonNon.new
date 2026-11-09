@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Crown, Plus } from 'lucide-react-native';
@@ -10,9 +11,15 @@ import { Mascot } from '@/components/mascot/Mascot';
 
 export default function ProfilesScreen() {
   const { ready, loadFailed, profiles, activeProfile, selectProfile } = useProfiles();
+  const [selectionError, setSelectionError] = useState<string | null>(null);
 
-  const openProfile = (id: string) => {
-    selectProfile(id);
+  const openProfile = async (id: string) => {
+    setSelectionError(null);
+    const result = await selectProfile(id);
+    if (!result.ok) {
+      setSelectionError(result.error);
+      return;
+    }
     router.replace('/(tabs)/home');
   };
 
@@ -33,6 +40,7 @@ export default function ProfilesScreen() {
         {loadFailed ? (
           <Text style={styles.error}>بارگذاری پروفایل‌ها انجام نشد. برنامه را دوباره باز کنید.</Text>
         ) : null}
+        {selectionError ? <Text style={styles.error}>{selectionError}</Text> : null}
 
         {ready && !loadFailed && profiles.length === 0 ? (
           <Text style={styles.empty}>هنوز پروفایلی ساخته نشده است.</Text>
@@ -53,7 +61,7 @@ export default function ProfilesScreen() {
         <View style={styles.footer}>
           <PrimaryButton
             label="ساخت پروفایل جدید"
-            disabled={!ready}
+            disabled={!ready || loadFailed}
             icon={<Plus size={22} color={semanticColors.onPrimary} strokeWidth={2.5} />}
             onPress={() => router.push('/profile-editor')}
           />
