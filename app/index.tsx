@@ -16,11 +16,15 @@ export default function SplashScreen() {
   const { ready, activeProfile } = useProfiles();
 
   useEffect(() => {
+    let fallback: ReturnType<typeof setTimeout> | undefined;
     progress.value = withTiming(1, { duration: LOAD_DURATION_MS }, (finished) => {
-      if (finished) {
-        runOnJS(setAnimationDone)(true);
-      }
+      if (finished) runOnJS(setAnimationDone)(true);
     });
+    // Safety net: navigation must not depend solely on the native animation callback.
+    fallback = setTimeout(() => setAnimationDone(true), LOAD_DURATION_MS + 1800);
+    return () => {
+      if (fallback) clearTimeout(fallback);
+    };
   }, [progress]);
 
   useEffect(() => {
