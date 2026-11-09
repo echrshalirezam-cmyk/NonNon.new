@@ -1,8 +1,6 @@
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import {
   Vazirmatn_400Regular,
@@ -12,8 +10,6 @@ import {
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { semanticColors } from '@/constants/theme';
 import { ProfileProvider } from '@/context/ProfileContext';
-
-SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -28,27 +24,6 @@ export default function RootLayout() {
     'Vazirmatn-Bold': Vazirmatn_700Bold,
   });
 
-  useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    const hideSplash = () => {
-      requestAnimationFrame(() => {
-        SplashScreen.hideAsync().catch(() => {
-          // The native splash may already be hidden.
-        });
-      });
-    };
-
-    if (fontsLoaded || fontError) {
-      hideSplash();
-    } else {
-      // Never leave the native logo screen visible forever if a font stalls.
-      timeout = setTimeout(hideSplash, 4000);
-    }
-
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [fontsLoaded, fontError]);
 
   return (
     <ProfileProvider>
