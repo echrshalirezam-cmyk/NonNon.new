@@ -29,14 +29,26 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const hideSplash = () => {
+      requestAnimationFrame(() => {
+        SplashScreen.hideAsync().catch(() => {
+          // The native splash may already be hidden.
+        });
+      });
+    };
 
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+    if (fontsLoaded || fontError) {
+      hideSplash();
+    } else {
+      // Never leave the native logo screen visible forever if a font stalls.
+      timeout = setTimeout(hideSplash, 4000);
+    }
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [fontsLoaded, fontError]);
 
   return (
     <ProfileProvider>
