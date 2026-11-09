@@ -38,6 +38,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   const [outcome, setOutcome] = useState<ExerciseOutcome | null>(null);
   const [tally, setTally] = useState<LessonAttempt>(emptyTally);
   const startedAt = useRef(Date.now());
+  const completedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -49,6 +50,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   const isLast = stepIndex === steps.length - 1;
 
   function handleAnswered(result: ExerciseOutcome) {
+    if (outcome || busy || completedRef.current) return;
     setOutcome(result);
     setTally((current) => ({
       ...current,
@@ -59,11 +61,13 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   }
 
   function handleContinue() {
+    if (busy || completedRef.current) return;
     if (!isLast) {
-      setStepIndex(stepIndex + 1);
+      setStepIndex((current) => current + 1);
       setOutcome(null);
       return;
     }
+    completedRef.current = true;
     onComplete({ ...tally, seconds: Math.round((Date.now() - startedAt.current) / 1000) });
   }
 
@@ -87,6 +91,7 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
   }
 
   function renderStep() {
+    if (!step) return null;
     if (step.kind === 'vocabulary') {
       return <VocabularyStep words={step.words} onNext={handleContinue} />;
     }
@@ -96,9 +101,11 @@ export function LessonRunner({ lesson, busy, onComplete }: LessonRunnerProps) {
     return renderExercise(step.exercise);
   }
 
+  const progress = steps.length === 0 ? 1 : (stepIndex + (outcome ? 1 : 0)) / steps.length;
+
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <ProgressBar progress={stepIndex / steps.length} height={8} />
+      <ProgressBar progress={progress} height={8} />
       {renderStep()}
       {outcome ? (
         <FeedbackBar
