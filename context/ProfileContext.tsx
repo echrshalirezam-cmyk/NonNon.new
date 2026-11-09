@@ -34,6 +34,7 @@ type ProfileContextValue = {
   createProfile: (input: ProfileInput) => Promise<ActionResult>;
   updateProfile: (id: string, input: ProfileInput) => Promise<ActionResult>;
   deleteProfile: (id: string) => Promise<ActionResult>;
+  clearActiveProfile: () => Promise<ActionResult>;
   selectProfile: (id: string) => Promise<ActionResult>;
   recordLessonResult: (lessonId: string, attempt: LessonAttempt) => Promise<LessonResultOutcome>;
   recordReview: (coveredWordIds: string[], missedWordIds: string[]) => Promise<ActionResult>;
@@ -163,6 +164,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [profiles],
   );
 
+  const clearActiveProfile = useCallback(async (): Promise<ActionResult> => {
+    try {
+      await (await import('@/storage/profileStorage')).clearActiveProfileId();
+      setActiveId(null);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: STORAGE_ERROR };
+    }
+  }, []);
+
   const selectProfile = useCallback(async (id: string): Promise<ActionResult> => {
     if (!profiles.some((profile) => profile.id === id)) return { ok: false, error: NO_ACTIVE_ERROR };
     try {
@@ -217,6 +228,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateProfile,
       deleteProfile,
+      clearActiveProfile,
       selectProfile,
       recordLessonResult,
       recordReview,
@@ -232,6 +244,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateProfile,
       deleteProfile,
+      clearActiveProfile,
       selectProfile,
       recordLessonResult,
       recordReview,
