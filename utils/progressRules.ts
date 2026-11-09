@@ -64,7 +64,8 @@ export function claimDailyRewardRule(progress: ProfileProgress, today: string): 
   }
   const active = markActivity(progress, today);
   const amount = dailyRewardAmount(active.dailyStreak);
-  return { ok: true, progress: { ...active, coins: active.coins + amount, lastRewardDate: today } };
+  const next = { ...active, coins: active.coins + amount, lastRewardDate: today };
+  return { ok: true, progress: { ...next, achievements: unlockedAchievementIds(next) } };
 }
 
 export function buyHeartRule(progress: ProfileProgress, today: string): RuleResult {
@@ -86,14 +87,12 @@ export function reviewRule(
   const missed = new Set(missedWordIds);
   const resolved = new Set(coveredWordIds.filter((wordId) => !missed.has(wordId)));
   const active = markActivity(progress, today);
-  return {
-    ok: true,
-    progress: {
-      ...active,
-      reviewCount: active.reviewCount + 1,
-      mistakeHistory: active.mistakeHistory.filter((record) => !resolved.has(record.wordId)),
-    },
+  const next = {
+    ...active,
+    reviewCount: active.reviewCount + 1,
+    mistakeHistory: active.mistakeHistory.filter((record) => !resolved.has(record.wordId)),
   };
+  return { ok: true, progress: { ...next, achievements: unlockedAchievementIds(next) } };
 }
 
 export function unlockedAchievementIds(progress: ProfileProgress): string[] {
