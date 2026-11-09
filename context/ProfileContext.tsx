@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { loadActiveProfileId, loadProfiles, removeProfile, saveActiveProfileId, saveProfile } from '@/storage/profileStorage';
+import { clearActiveProfileId, loadActiveProfileId, loadProfiles, removeProfile, saveActiveProfileId, saveProfile } from '@/storage/profileStorage';
 import { defaultAvatarId } from '@/constants/avatars';
 import { validateProfileName } from '@/utils/profileValidation';
 import type { LessonAttempt } from '@/types/lesson';
@@ -166,7 +166,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const clearActiveProfile = useCallback(async (): Promise<ActionResult> => {
     try {
-      await (await import('@/storage/profileStorage')).clearActiveProfileId();
+      await clearActiveProfileId();
       setActiveId(null);
       return { ok: true };
     } catch {
