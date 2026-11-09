@@ -1,11 +1,12 @@
 {
-  "name": "bolt-expo-starter",
+  "name": "nonnon",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
+    "build:android": "expo prebuild --platform android --no-install && cd android && ./gradlew assembleDebug",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit"
   },
