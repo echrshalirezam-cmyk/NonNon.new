@@ -30,8 +30,61 @@ export function createDefaultProgress(): ProfileProgress {
   };
 }
 
+function nonNegativeInteger(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : fallback;
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? [...new Set(value.filter((item): item is string => typeof item === 'string' && item.length > 0))]
+    : [];
+}
+
 export function normalizeProgress(stored: Partial<ProfileProgress>): ProfileProgress {
-  return { ...createDefaultProgress(), ...stored };
+  const defaults = createDefaultProgress();
+  const raw = stored as Record<string, unknown>;
+  const validLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  const lessonHistory = Array.isArray(raw.lessonHistory)
+    ? raw.lessonHistory.filter((item): item is ProfileProgress['lessonHistory'][number] =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as ProfileProgress['lessonHistory'][number]).lessonId === 'string' &&
+        typeof (item as ProfileProgress['lessonHistory'][number]).completedAt === 'string' &&
+        Number.isFinite((item as ProfileProgress['lessonHistory'][number]).correctCount) &&
+        Number.isFinite((item as ProfileProgress['lessonHistory'][number]).wrongCount) &&
+        Number.isFinite((item as ProfileProgress['lessonHistory'][number]).seconds),
+      )
+    : [];
+  const mistakeHistory = Array.isArray(raw.mistakeHistory)
+    ? raw.mistakeHistory.filter((item): item is ProfileProgress['mistakeHistory'][number] =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as ProfileProgress['mistakeHistory'][number]).wordId === 'string' &&
+        typeof (item as ProfileProgress['mistakeHistory'][number]).lessonId === 'string' &&
+        typeof (item as ProfileProgress['mistakeHistory'][number]).answeredAt === 'string',
+      )
+    : [];
+
+  return {
+    ...defaults,
+    xp: nonNegativeInteger(raw.xp, defaults.xp),
+    coins: nonNegativeInteger(raw.coins, defaults.coins),
+    hearts: Math.min(MAX_HEARTS, nonNegativeInteger(raw.hearts, defaults.hearts)),
+    heartsDate: typeof raw.heartsDate === 'string' ? raw.heartsDate : null,
+    learningLevel: validLevels.includes(String(raw.learningLevel))
+      ? (raw.learningLevel as ProfileProgress['learningLevel'])
+      : defaults.learningLevel,
+    dailyStreak: nonNegativeInteger(raw.dailyStreak, defaults.dailyStreak),
+    lastActiveDate: typeof raw.lastActiveDate === 'string' ? raw.lastActiveDate : null,
+    lastRewardDate: typeof raw.lastRewardDate === 'string' ? raw.lastRewardDate : null,
+    reviewCount: nonNegativeInteger(raw.reviewCount, defaults.reviewCount),
+    completedLessons: stringList(raw.completedLessons),
+    achievements: stringList(raw.achievements),
+    lessonHistory,
+    mistakeHistory,
+  };
 }
 
 export function currentStreak(progress: ProfileProgress, today: string): number {
