@@ -23,6 +23,16 @@
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png",
         "backgroundColor": "#060D24"
       },
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#060D24",
+        "mdpi": "./assets/images/splash-icon.png",
+        "hdpi": "./assets/images/splash-icon.png",
+        "xhdpi": "./assets/images/splash-icon.png",
+        "xxhdpi": "./assets/images/splash-icon.png",
+        "xxxhdpi": "./assets/images/splash-icon.png"
+      },
       "edgeToEdgeEnabled": false,
       "softwareKeyboardLayoutMode": "pan"
     },
