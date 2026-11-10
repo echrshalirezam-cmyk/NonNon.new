@@ -1,11 +1,12 @@
 {
-  "name": "bolt-expo-starter",
+  "name": "nonnon",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "build:web": "expo export --platform web",
+    "build:android": "expo prebuild --platform android --no-install && cd android && ./gradlew assembleDebug",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit"
   },
@@ -28,7 +29,7 @@
     "expo-linking": "~57.0.13",
     "expo-router": "~57.0.28",
     "expo-speech": "~57.0.3",
-    "expo-speech-recognition": "^58.0.1",
+    "expo-speech-recognition": "^57.1.1",
     "expo-splash-screen": "~57.0.10",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.3",

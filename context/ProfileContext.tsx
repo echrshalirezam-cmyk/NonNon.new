@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { loadProfiles, removeProfile, saveProfile } from '@/storage/profileStorage';
+import { clearActiveProfileId, loadActiveProfileId, loadProfiles, removeProfile, saveActiveProfileId, saveProfile } from '@/storage/profileStorage';
 import { defaultAvatarId } from '@/constants/avatars';
 import { validateProfileName } from '@/utils/profileValidation';
 import type { LessonAttempt } from '@/types/lesson';
@@ -34,7 +34,8 @@ type ProfileContextValue = {
   createProfile: (input: ProfileInput) => Promise<ActionResult>;
   updateProfile: (id: string, input: ProfileInput) => Promise<ActionResult>;
   deleteProfile: (id: string) => Promise<ActionResult>;
-  selectProfile: (id: string) => void;
+  clearActiveProfile: () => Promise<ActionResult>;
+  selectProfile: (id: string) => Promise<ActionResult>;
   recordLessonResult: (lessonId: string, attempt: LessonAttempt) => Promise<LessonResultOutcome>;
   recordReview: (coveredWordIds: string[], missedWordIds: string[]) => Promise<ActionResult>;
   claimDailyReward: () => Promise<ActionResult>;
@@ -60,18 +61,30 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadProfiles()
-      .then((loaded) => {
-        if (!cancelled) setProfiles(loaded);
+    const startupTimeout = setTimeout(() => {
+      if (!cancelled) {
+        setLoadFailed(true);
+        setReady(true);
+      }
+    }, 8000);
+
+    Promise.all([loadProfiles(), loadActiveProfileId()])
+      .then(([loaded, savedActiveId]) => {
+        if (cancelled) return;
+        setProfiles(loaded);
+        setActiveId(savedActiveId && loaded.some((profile) => profile.id === savedActiveId) ? savedActiveId : null);
+        setLoadFailed(false);
       })
       .catch(() => {
         if (!cancelled) setLoadFailed(true);
       })
       .finally(() => {
+        clearTimeout(startupTimeout);
         if (!cancelled) setReady(true);
       });
     return () => {
       cancelled = true;
+      clearTimeout(startupTimeout);
     };
   }, []);
 
@@ -161,9 +174,26 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [profiles],
   );
 
-  const selectProfile = useCallback((id: string) => {
-    setActiveId(id);
+  const clearActiveProfile = useCallback(async (): Promise<ActionResult> => {
+    try {
+      await clearActiveProfileId();
+      setActiveId(null);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: STORAGE_ERROR };
+    }
   }, []);
+
+  const selectProfile = useCallback(async (id: string): Promise<ActionResult> => {
+    if (!profiles.some((profile) => profile.id === id)) return { ok: false, error: NO_ACTIVE_ERROR };
+    try {
+      await saveActiveProfileId(id);
+      setActiveId(id);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: STORAGE_ERROR };
+    }
+  }, [profiles]);
 
   const recordLessonResult = useCallback(
     async (lessonId: string, attempt: LessonAttempt): Promise<LessonResultOutcome> => {
@@ -189,7 +219,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   );
 
   const claimDailyReward = useCallback(() => commitRule(claimDailyRewardRule), [commitRule]);
-
   const buyHeart = useCallback(() => commitRule(buyHeartRule), [commitRule]);
 
   const updateAudioSettings = useCallback(
@@ -209,6 +238,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateProfile,
       deleteProfile,
+      clearActiveProfile,
       selectProfile,
       recordLessonResult,
       recordReview,
@@ -224,6 +254,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       createProfile,
       updateProfile,
       deleteProfile,
+      clearActiveProfile,
       selectProfile,
       recordLessonResult,
       recordReview,

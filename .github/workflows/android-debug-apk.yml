@@ -1,0 +1,79 @@
+name: Android Debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - fix/core-stability-and-android-build
+
+concurrency:
+  group: nonnon-android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platforms;android-36"
+          sdkmanager "build-tools;36.0.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: Validate Android JavaScript bundle
+        run: npx expo export --platform android --output-dir /tmp/nonnon-android-export
+
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Limit APK to Galaxy S8+ CPU architecture
+        run: |
+          printf '\nreactNativeArchitectures=arm64-v8a\n' >> android/gradle.properties
+          tail -n 5 android/gradle.properties
+
+      - name: Build installable debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace --info -PreactNativeArchitectures=arm64-v8a
+
+      - name: Report APK size
+        if: success()
+        run: |
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          stat -c 'APK_BYTES=%s' android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NonNon-Android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
